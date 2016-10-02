@@ -1,25 +1,25 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using UnityEditor;
 using Generator.HeightMap;
 
 namespace Generation.Terrain
 {
-    [RequireComponent(typeof(CompositeHeightMap))]
     public class TerrainGenerator : MonoBehaviour
     {
-        public GameObject chunkPrefab;
         public int seed = 0;
-        private CompositeHeightMap hm;
+        private CompositeHeightMap heightMap;
+        public GameObject chunkPrefab;
+
 
         void Awake()
         {
             Random.InitState(seed);
+            heightMap = new CompositeHeightMap();
         }
 
-        void Start()
+        public void AddHeightMap(IHeightMap map)
         {
-            hm = GetComponent<CompositeHeightMap>();
+            heightMap.AddHeightMap(map);
         }
 
         public GameObject GenerateChunk(Vector3 position, GameObject chunk = null)
@@ -30,9 +30,11 @@ namespace Generation.Terrain
                 chunk.transform.SetParent(transform);
             }
 
-            chunk.GetComponent<Chunk>().SetPosition(position, hm);
+            chunk.GetComponent<Chunk>().SetPosition(position, heightMap);
             return chunk.gameObject;
         }
     }
+
+    
 }
 

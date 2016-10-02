@@ -1,42 +1,50 @@
 ﻿
+using Generation.Terrain;
 using UnityEngine;
 
 namespace Generator.HeightMap
 {
-    class DiamondSquareHeightMap : IHeightMap
+    [RequireComponent(typeof(TerrainGenerator))]
+    class DiamondSquareHeightMap : MonoBehaviour, IHeightMap
     {
-        private float[,] map;
-        private int size;
-        private float height;
-        private float scale;
+        [Range(1, 20)]
+        public int detailLevel = 8;
+        [Range(10, 10000)]
+        public float size = 1000;
+        [Range(0, 1)]
+        public float randomLimit = 0.3f;
+        [Range(0, 0.5f)]
+        public float randomLimitDecay = 0.1f;
+        public AnimationCurve heightCurve;
 
-        public DiamondSquareHeightMap(int level, float scale, float height)
+        private float[,] map;
+        private int vertices;
+
+        void Start()
         {
-            this.height = height;
-            this.scale = scale;
-            GenerateHeightMap(level, 2f, 0.3f); 
+            GenerateHeightMap();
+            GetComponent<TerrainGenerator>().AddHeightMap(this);
         }
 
-
-        private void GenerateHeightMap(int steps, float initialRandomLimit, float RandomLimitDecay)
+        private void GenerateHeightMap()
         {
-            float randomLimit = initialRandomLimit;
-            size = (int) Mathf.Pow(2, steps) + 1;
+            float tmpRandomLimit = randomLimit;
+            vertices = (int) Mathf.Pow(2, detailLevel) + 1;
 
             // init height map
-            map = new float[size, size];
+            map = new float[vertices, vertices];
             map[0, 0] = 0.5f; // top left
-            map[0, size-1] = 0.5f; // top right
-            map[size-1, 0] = 0.5f; // bottom left
-            map[size-1, size-1] = 0.5f; // bottom right
+            map[0, vertices-1] = 0.5f; // top right
+            map[vertices-1, 0] = 0.5f; // bottom left
+            map[vertices-1, vertices-1] = 0.5f; // bottom right
 
             // will perform steps (backwards since it does it rough first then more and more detailed)
-            for (int step = steps; step > 0; step--)
+            for (int step = detailLevel; step > 0; step--)
             {
-                PerformDiamondStep(step, randomLimit);
-                randomLimit *= 1 - RandomLimitDecay;
-                PerformSquareStep(step, randomLimit);
-                randomLimit *= 1 - RandomLimitDecay;
+                PerformDiamondStep(step, tmpRandomLimit);
+                tmpRandomLimit *= 1 - randomLimitDecay;
+                PerformSquareStep(step, tmpRandomLimit);
+                tmpRandomLimit *= 1 - randomLimitDecay;
             }
         }
 
@@ -45,9 +53,9 @@ namespace Generator.HeightMap
             int squareSize = (int)Mathf.Pow(2, step);
 
             // iterate through all squares in current step
-            for(int x = 0; x < size - 1; x += squareSize)
+            for(int x = 0; x < vertices - 1; x += squareSize)
             {
-                for (int z = 0; z < size - 1; z += squareSize)
+                for (int z = 0; z < vertices - 1; z += squareSize)
                 {
                     // get corner values
                     float topLeft = map[x, z];
@@ -69,9 +77,9 @@ namespace Generator.HeightMap
             int diamondSize = (int)Mathf.Pow(2, step - 1);
 
             // iterate through all squares in current step
-            for (int x = 0; x < size; x += diamondSize)
+            for (int x = 0; x < vertices; x += diamondSize)
             {
-                for (int z = 0; z < size; z += diamondSize)
+                for (int z = 0; z < vertices; z += diamondSize)
                 {
                     // skip irrelevant points
                     if ((x + z) % (diamondSize * 2) == 0)
@@ -86,7 +94,7 @@ namespace Generator.HeightMap
                         corners++;
                         value += map[x, z - diamondSize];
                     }
-                    if (z < size - 1)
+                    if (z < vertices - 1)
                     {
                         // get bottom corner
                         corners++;
@@ -98,7 +106,7 @@ namespace Generator.HeightMap
                         corners++;
                         value += map[x - diamondSize, z];
                     }
-                    if (x < size - 1)
+                    if (x < vertices - 1)
                     {
                         // get right corner
                         corners++;
@@ -114,22 +122,36 @@ namespace Generator.HeightMap
             }
         }
 
+        private float ClampCoordinate(float f)
+        {
+            float result = Mathf.Abs(f) % (size * 2);
+            if (result >= size)
+                result = size * 2 - result;
+            return result;
+        }
+
         public float Sample(float x, float z)
         {
-            // clamp values
-            int x2 = Mathf.Clamp((int) (x * scale), 0, size - 2);
-            int z2 = Mathf.Clamp((int) (z * scale), 0, size - 2);
+            // clamp values to ensure that they are within the grid
+            float x2 = ClampCoordinate(x);
+            float z2 = ClampCoordinate(z);
+
+            // get map grid indices
+            float vPerSize = vertices / size;
+            int ix = (int)(x2 * vPerSize);
+            int iz = (int)(z2 * vPerSize);
 
             // get nearby grid values
-            float topLeft = map[x2, z2];
-            float topRight = map[x2 + 1, z2];
-            float bottomLeft = map[x2, z2 + 1];
-            float bottomRight = map[x2 + 1, z2 + 1];
+            float topLeft = map[ix, iz];
+            float topRight = map[ix + 1, iz];
+            float bottomLeft = map[ix, iz + 1];
+            float bottomRight = map[ix + 1, iz + 1];
 
             // bilinear interpolation to get value
-            float v1 = Mathf.Lerp(topLeft, topRight, x % 1f);
-            float v2 = Mathf.Lerp(bottomLeft, bottomRight, x % 1f);
-            return height * Mathf.Lerp(v1, v2, z % 1f);
+            float v1 = Mathf.Lerp(topLeft, topRight, x % vPerSize);
+            float v2 = Mathf.Lerp(bottomLeft, bottomRight, x % vPerSize);
+            float v3 = Mathf.Lerp(v1, v2, z % vPerSize);
+            return heightCurve.Evaluate(v3);
         }
     }
 }

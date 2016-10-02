@@ -3,13 +3,11 @@ using UnityEngine;
 
 namespace Generator.HeightMap
 {
-    [DisallowMultipleComponent]
-    class CompositeHeightMap : MonoBehaviour, IHeightMap
+    class CompositeHeightMap : IHeightMap
     {
         private List<IHeightMap> maps;
-        public AnimationCurve curve;
 
-        void Awake()
+        public CompositeHeightMap()
         {
             maps = new List<IHeightMap>();
         }
@@ -27,7 +25,7 @@ namespace Generator.HeightMap
             {
                 acc += map.Sample(x, z);
             }
-            return curve.Evaluate(acc);
+            return acc;
         }
     }
 }

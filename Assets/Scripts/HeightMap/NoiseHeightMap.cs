@@ -3,17 +3,18 @@ using UnityEngine;
 
 namespace Generator.HeightMap
 {
-    [RequireComponent(typeof(CompositeHeightMap))]
+    [RequireComponent(typeof(TerrainGenerator))]
     public class NoiseHeightMap : MonoBehaviour, IHeightMap
     {
         [Range(1, 5)]
         public int octaves = 3;
         [Range(0, 1)]
         public float persistance = 0.5f;
-        [Range(1, 10)]
+        [Range(1, 40)]
         public float lacunarity = 2f;
         [Range(1f, 50f)]
         public float smoothness = 0.5f;
+        public AnimationCurve heightCurve;
 
         private NoiseFunction[] noiseFunctions;
 
@@ -31,7 +32,7 @@ namespace Generator.HeightMap
                     amplitude = Mathf.Pow(persistance, i)
                 };
             }
-            GetComponent<CompositeHeightMap>().AddHeightMap(this);
+            GetComponent<TerrainGenerator>().AddHeightMap(this);
         }
 
         public float Sample(float x, float z)
@@ -42,7 +43,7 @@ namespace Generator.HeightMap
             {
                 acc += nf.Sample(x, z);
             }
-            return acc;
+            return heightCurve.Evaluate(acc);
         }
 
         private struct NoiseFunction
