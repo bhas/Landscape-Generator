@@ -1,13 +1,22 @@
-﻿
+﻿using System.Collections.Generic;
+using UnityEngine;
+
 namespace Generator.HeightMap
 {
-    class CompositeHeightMap : IHeightMap
+    [DisallowMultipleComponent]
+    class CompositeHeightMap : MonoBehaviour, IHeightMap
     {
-        private IHeightMap[] maps;
+        private List<IHeightMap> maps;
+        public AnimationCurve curve;
 
-        public CompositeHeightMap(params IHeightMap[] maps)
+        void Awake()
         {
-            this.maps = maps;
+            maps = new List<IHeightMap>();
+        }
+
+        public void AddHeightMap(IHeightMap hm)
+        {
+            maps.Add(hm);
         }
 
         public float Sample(float x, float z)
@@ -18,7 +27,7 @@ namespace Generator.HeightMap
             {
                 acc += map.Sample(x, z);
             }
-            return acc;
+            return curve.Evaluate(acc);
         }
     }
 }
