@@ -8,11 +8,18 @@ public class UnityBuilder
     static string TARGET_NAME = "TestProject";
     static string TARGET_DIR = "Builds";
 
-    [MenuItem("Custom/Build Windows")]
+    [MenuItem("Build/Windows")]
     static void BuildForWindows()
     {
         string fileName = TARGET_NAME + ".exe";
         GenericBuild(SCENES, TARGET_DIR + "/" + fileName, BuildTarget.StandaloneWindows64, BuildOptions.None);
+    }
+
+    [MenuItem("Build/Android")]
+    static void BuildForAndroid()
+    {
+        string fileName = TARGET_NAME + ".apk";
+        GenericBuild(SCENES, TARGET_DIR + "/" + fileName, BuildTarget.Android, BuildOptions.None);
     }
 
     private static string[] FindEnabledEditorScenes()
