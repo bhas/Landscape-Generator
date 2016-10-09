@@ -22,6 +22,7 @@ public class UnityBuilder
         GenericBuild(SCENES, TARGET_DIR + "/" + fileName, BuildTarget.Android, BuildOptions.None);
     }
 
+    // find all the scenes from the build settings
     private static string[] FindEnabledEditorScenes()
     {
         List<string> EditorScenes = new List<string>();
