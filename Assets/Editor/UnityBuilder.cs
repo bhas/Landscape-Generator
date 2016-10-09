@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 
 public class UnityBuilder
@@ -8,24 +9,22 @@ public class UnityBuilder
     static string TARGET_NAME = "TestProject";
     static string TARGET_DIR = "Builds";
 
-    [MenuItem("Build/Jenkins")]
-    static void BuildOnJenkins()
-    {
-
-    }
-
+    // method for building for windows
     [MenuItem("Build/Windows")]
     static void BuildForWindows()
     {
-        string fileName = TARGET_NAME + ".exe";
-        GenericBuild(SCENES, TARGET_DIR + "/" + fileName, BuildTarget.StandaloneWindows64, BuildOptions.None);
+        string path = TARGET_DIR + "/" + TARGET_NAME + ".exe";
+        Directory.CreateDirectory(TARGET_DIR);
+        GenericBuild(SCENES, path, BuildTarget.StandaloneWindows64, BuildOptions.None);
     }
 
+    // method for building for android
     [MenuItem("Build/Android")]
     static void BuildForAndroid()
     {
-        string fileName = TARGET_NAME + ".apk";
-        GenericBuild(SCENES, TARGET_DIR + "/" + fileName, BuildTarget.Android, BuildOptions.None);
+        string path = TARGET_DIR + "/" + TARGET_NAME + ".apk";
+        Directory.CreateDirectory(TARGET_DIR);
+        GenericBuild(SCENES, path, BuildTarget.Android, BuildOptions.None);
     }
 
     // find all the scenes from the build settings
@@ -40,6 +39,7 @@ public class UnityBuilder
         return EditorScenes.ToArray();
     }
 
+    // generic method for building the game
     private static void GenericBuild(string[] scenes, string filePath, BuildTarget buildTarget, BuildOptions build_options)
     {
         EditorUserBuildSettings.SwitchActiveBuildTarget(buildTarget);
