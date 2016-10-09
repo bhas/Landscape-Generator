@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Generator.HeightMap
@@ -15,6 +16,11 @@ namespace Generator.HeightMap
         public void AddHeightMap(IHeightMap hm)
         {
             maps.Add(hm);
+        }
+
+        public void GenerateHeightMap()
+        {
+
         }
 
         public float Sample(float x, float z)

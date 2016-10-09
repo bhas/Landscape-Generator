@@ -7,14 +7,22 @@ namespace Generation.Terrain
     public class TerrainGenerator : MonoBehaviour
     {
         public int seed = 0;
-        private CompositeHeightMap heightMap;
+        private CompositeHeightMap heightMap = new CompositeHeightMap();
         public GameObject chunkPrefab;
+        private List<Chunk> chunks = new List<Chunk>();
 
+        void OnValidate()
+        {
+            UpdateTerrainGeometry();
+        }
 
-        void Awake()
+        public void UpdateTerrainGeometry()
         {
             Random.InitState(seed);
-            heightMap = new CompositeHeightMap();
+            foreach (Chunk chunk in chunks)
+            {
+                chunk.SetPosition(chunk.transform.position, heightMap);
+            }
         }
 
         public void AddHeightMap(IHeightMap map)
@@ -27,6 +35,7 @@ namespace Generation.Terrain
             if (chunk == null)
             {
                 chunk = Instantiate(chunkPrefab);
+                chunks.Add(chunk.GetComponent<Chunk>());
                 chunk.transform.SetParent(transform);
             }
 
@@ -34,7 +43,5 @@ namespace Generation.Terrain
             return chunk.gameObject;
         }
     }
-
-    
 }
 

@@ -14,66 +14,73 @@ namespace Generation.Terrain
         [Tooltip("Chunks outside this distance will be destroyed")]
         public float bufferDistance = 10;
 
-        private Vector2 chunkIndex = new Vector2(0.5f, 0.5f);
-        private Vector2 currentChunkIndex;
-        private Vector3 chunkCenter;
-        private List<GameObject> chunks;
-        private List<GameObject> unusedChunks;
+        private Vector2 currentChunk; // the chunk the render controller is in
+        private List<GameObject> chunks = new List<GameObject>();
+        private List<GameObject> unusedChunks = new List<GameObject>();
         private TerrainGenerator generator;
 
-        void Awake()
+        void Start()
         {
             generator = GetComponent<TerrainGenerator>();
-            chunks = new List<GameObject>();
-            unusedChunks = new List<GameObject>();
-
-            float halfSize = Chunk.size / 2;
-            chunkCenter = new Vector3(halfSize, 0, halfSize);
-
-
+            // find the current chunk
+            currentChunk = new Vector2(SnapToChunk(renderController.position.x), SnapToChunk(renderController.position.z));
+            AddNewChunks();
         }
 
         void Update()
         {
-            // check if the controller is in a new chunks
-            currentChunkIndex = GetChunkIndex();
-            if (currentChunkIndex != chunkIndex)
+            // check if the controller is in a new chunk
+            if (CurrentChunkChanged())
             {
-                chunkIndex = currentChunkIndex;
                 UpdateExistingChunks();
                 AddNewChunks();
             }
         }
 
-        private Vector2 GetChunkIndex()
+        /// <summary>
+        /// Finds the current chunk (the chunk that is occupied by the render controller)
+        /// </summary>
+        /// <returns>true if the current chunk was changed since last frame</returns>
+        private bool CurrentChunkChanged()
         {
-            int x = (int) (renderController.position.x / Chunk.size);
-            int y = (int) (renderController.position.z / Chunk.size);
-            return new Vector2(x, y);
+            var old = currentChunk;
+            currentChunk = new Vector2(SnapToChunk(renderController.position.x), SnapToChunk(renderController.position.z));
+            return old != currentChunk;
+        }
+
+        // snaps a float to the nearest chunk position
+        private float SnapToChunk(float f)
+        {
+            return Mathf.Round(f / Chunk.size) * Chunk.size;
         }
 
         private void AddNewChunks()
         {
-            int count = (int)(viewDistance / Chunk.size) + 1;
+            // then number of chunks to check
+            int count = Mathf.CeilToInt(viewDistance / Chunk.size);
+            Vector2 position;
             for (int i = -count; i <= count; i++)
             {
                 for (int j = -count; j <= count; j++)
                 {
-                    var index = new Vector3(i + chunkIndex.x, 0, j + chunkIndex.y);
-                    var position = index * Chunk.size;
+                    // position of the chunk in world space
+                    position = new Vector2(i, j) * Chunk.size + currentChunk;
+
+                    // check if chunk is within view distance
                     if (DistanceToChunk(position) < viewDistance)
                     {
-                        if (!HasChunk(position.x, position.z))
+                        // Check if chunk exists already
+                        if (!HasChunk(position.x, position.y))
                         {
                             if (unusedChunks.Count == 0)
                             {
                                 // Create new chunk
-                                chunks.Add(generator.GenerateChunk(position));
+                                chunks.Add(generator.GenerateChunk(new Vector3(position.x, 0, position.y)));
                             }
                             else
                             {
                                 // Reuse old chunk
-                                chunks.Add(generator.GenerateChunk(position, unusedChunks[0]));
+                                chunks.Add(generator.GenerateChunk(new Vector3(position.x, 0, position.y), unusedChunks[0]));
                                 unusedChunks.RemoveAt(0);
                             }
                         }
@@ -84,11 +91,14 @@ namespace Generation.Terrain
 
         private void UpdateExistingChunks()
         {
+            // copy all the chunks to a temporary list in order to edit the original while iterating
+            List<GameObject> chunksCopy = new List<GameObject>(chunks);
             float distance;
-            List<GameObject> chunkCopy = new List<GameObject>(chunks);
-            foreach(GameObject chunk in chunkCopy)
+            foreach (GameObject chunk in chunksCopy)
             {
-                distance = DistanceToChunk(chunk.transform.position);
+                // find the distance to the chunk
+                Vector3 pos = chunk.transform.position;
+                distance = DistanceToChunk(new Vector2(pos.x, pos.z));
 
                 if (distance < viewDistance)
                 {
@@ -108,11 +118,9 @@ namespace Generation.Terrain
             }
         }
 
-        private float DistanceToChunk(Vector3 chunkPos)
+        private float DistanceToChunk(Vector2 chunkPos)
         {
-            Vector3 diff = chunkPos + chunkCenter - renderController.position;
-            diff.y = 0;
-            return diff.magnitude;
+            return (chunkPos - currentChunk).magnitude;
         }
 
         private bool HasChunk(float x, float z)

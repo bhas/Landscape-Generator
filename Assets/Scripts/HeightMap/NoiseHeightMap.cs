@@ -1,4 +1,5 @@
-﻿using Generation.Terrain;
+﻿
+using Generation.Terrain;
 using UnityEngine;
 
 namespace Generator.HeightMap
@@ -7,32 +8,23 @@ namespace Generator.HeightMap
     public class NoiseHeightMap : MonoBehaviour, IHeightMap
     {
         [Range(1, 5)]
-        public int octaves = 3;
-        [Range(0, 1)]
-        public float persistance = 0.5f;
-        [Range(1, 40)]
-        public float lacunarity = 2f;
+        public int octaves = 2;
         [Range(1f, 50f)]
-        public float smoothness = 0.5f;
-        public AnimationCurve heightCurve;
+        public float smoothness = 20;
+        public AnimationCurve heightCurve = AnimationCurve.Linear(0, 0, 2, 20);
 
         private NoiseFunction[] noiseFunctions;
 
-        void Start()
+        void Awake()
         {
-            noiseFunctions = new NoiseFunction[octaves];
-            // create the noise functions
-            for(int i = 0; i < octaves; i++)
-            {
-                noiseFunctions[i] = new NoiseFunction()
-                {
-                    offsetX = Random.value * 10000,
-                    offsetZ = Random.value * 10000,
-                    frequency = 1 / (smoothness * Mathf.Pow(lacunarity, i)),
-                    amplitude = Mathf.Pow(persistance, i)
-                };
-            }
+            GenerateHeightMap();
             GetComponent<TerrainGenerator>().AddHeightMap(this);
+        }
+
+        void OnValidate()
+        {
+            GenerateHeightMap();
+            GetComponent<TerrainGenerator>().UpdateTerrainGeometry();
         }
 
         public float Sample(float x, float z)
@@ -44,6 +36,26 @@ namespace Generator.HeightMap
                 acc += nf.Sample(x, z);
             }
             return heightCurve.Evaluate(acc);
+        }
+
+        public void GenerateHeightMap()
+        {
+            noiseFunctions = new NoiseFunction[octaves];
+            // create the noise functions
+            float freq = 1 / smoothness;
+            float amp = 1;
+            for (int i = 0; i < octaves; i++)
+            {
+                noiseFunctions[i] = new NoiseFunction()
+                {
+                    offsetX = Random.value * 10000,
+                    offsetZ = Random.value * 10000,
+                    frequency = freq,
+                    amplitude = amp
+                };
+                freq *= 2;
+                amp *= 0.5f;
+            }
         }
 
         private struct NoiseFunction

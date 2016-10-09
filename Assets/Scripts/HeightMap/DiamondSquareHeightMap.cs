@@ -26,7 +26,13 @@ namespace Generator.HeightMap
             GetComponent<TerrainGenerator>().AddHeightMap(this);
         }
 
-        private void GenerateHeightMap()
+        void OnValidate()
+        {
+            GenerateHeightMap();
+            GetComponent<TerrainGenerator>().UpdateTerrainGeometry();
+        }
+
+        public void GenerateHeightMap()
         {
             float tmpRandomLimit = randomLimit;
             vertices = (int) Mathf.Pow(2, detailLevel) + 1;

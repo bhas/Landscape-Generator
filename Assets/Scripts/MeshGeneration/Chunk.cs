@@ -17,6 +17,7 @@ namespace Generation.Terrain
         // level of detail (for each increase the number of triangles halfs)
         private int lod = -1;
         private Mesh mesh;
+        private MeshCollider meshCollider;
 
         void Awake()
         {
@@ -32,7 +33,7 @@ namespace Generation.Terrain
             mesh = new Mesh();
             mesh.name = "ChunkMesh";
             GetComponent<MeshFilter>().sharedMesh = mesh;
-            GetComponent<MeshCollider>().sharedMesh = mesh;
+            meshCollider = GetComponent<MeshCollider>();
         }
 
         public void SetPosition(Vector3 pos, IHeightMap heightMap)
@@ -87,7 +88,13 @@ namespace Generation.Terrain
                     vertexArray[i * vertices + j] = vertex;
                 }
             }
+            mesh.Clear();
             mesh.vertices = vertexArray;
+            mesh.triangles = triangles00;
+
+            // update mesh collider to fit new mesh
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
         }
 
         private int[] GenerateTriangles(int detailLevel)
