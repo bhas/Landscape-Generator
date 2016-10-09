@@ -8,6 +8,12 @@ public class UnityBuilder
     static string TARGET_NAME = "TestProject";
     static string TARGET_DIR = "Builds";
 
+    [MenuItem("Build/Jenkins")]
+    static void BuildOnJenkins()
+    {
+
+    }
+
     [MenuItem("Build/Windows")]
     static void BuildForWindows()
     {
