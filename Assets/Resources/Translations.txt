@@ -1,0 +1,4 @@
+Key	English	Danish
+title	title	titel
+text	text	tekst
+play	play	spil
