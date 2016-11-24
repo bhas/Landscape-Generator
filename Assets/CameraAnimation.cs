@@ -1,23 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
-using System.Collections.Generic;
 
 public class CameraAnimation : MonoBehaviour
 {
-    [Tooltip("The start position and rotation for when the first animation begins")]
-    public Transform start;
     public AnimationStep[] animations;
-
-
-    // Use this for initialization
-    void Start()
-    {
-        PlayAnimations(() =>
-        {
-            print("Animations are over");
-        });
-    }
+    private Vector3 startPosition;
+    private Quaternion startRotation;
 
     /// <summary>
     /// Plays all camera animations
@@ -25,6 +14,8 @@ public class CameraAnimation : MonoBehaviour
     /// <param name="callback">callback function called when all animations have finished</param>
     public void PlayAnimations(Action callback)
     {
+        startPosition = transform.position;
+        startRotation = transform.rotation;
         StartCoroutine(Animate(0, callback));
     }
 
@@ -48,7 +39,7 @@ public class CameraAnimation : MonoBehaviour
         {
             yield return new WaitForSeconds(anim.duration);
             StartCoroutine(Animate(index + 1, callback));
-            yield break;
+            yield break; // stop
         }
 
         // do the animation
@@ -56,18 +47,19 @@ public class CameraAnimation : MonoBehaviour
         {
             t = anim.curve.Evaluate(time / anim.duration);
             // lerp position
-            if (start.position != anim.target.position)
-                transform.position = Vector3.LerpUnclamped(start.position, anim.target.position, t);
+            if (startPosition != anim.target.position)
+                transform.position = Vector3.LerpUnclamped(startPosition, anim.target.position, t);
             // lerp rotation
-            if (start.rotation != anim.target.rotation)
-                transform.rotation = Quaternion.LerpUnclamped(start.rotation, anim.target.rotation, t);
+            if (startRotation != anim.target.rotation)
+                transform.rotation = Quaternion.LerpUnclamped(startRotation, anim.target.rotation, t);
 
             time += Time.deltaTime;
             yield return null; // pause for a frame
         }
 
         // start next animation
-        start = anim.target;
+        startPosition = anim.target.position;
+        startRotation = anim.target.rotation;
         StartCoroutine(Animate(index + 1, callback));
     }
 
